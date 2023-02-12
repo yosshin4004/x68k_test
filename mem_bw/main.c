@@ -531,6 +531,7 @@ measurement(
 			G_CLR_ON();
 			sprintf(
 				buff,
+				"\n"
 				"testCase %d/%d\n"
 				"\n"
 				"CRTMOD(13) 512x512 65536color 1plane 15kHz\n",
@@ -544,6 +545,7 @@ measurement(
 			G_CLR_ON();
 			sprintf(
 				buff,
+				"\n"
 				"testCase %d/%d\n"
 				"\n"
 				"CRTMOD(12) 512x512 65536color 1plane 31kHz\n",
@@ -552,6 +554,37 @@ measurement(
 			);
 			printf(buff); fprintf(fp, buff);
 		} break;
+	}
+
+	/*
+		テキストパレット設定
+		15hKz インターレース表示は液晶モニタに焼き付きを起こす。
+		偶数ラインと奇数ラインの輝度差を抑えるためテキストパレットを補正する。
+	*/
+	{
+		/*
+			InsideX68000 p.215
+			スプライトパレット #0 の定義開始アドレス
+		*/
+		uint16_t *spPalette = (uint16_t *)0xE82200;
+		/* 文字の色 */
+		{
+			int r = 12;
+			int g = 12;
+			int b = 12;
+			for (int iColor = 1; iColor < 16; iColor++) {
+				spPalette[iColor] = (g << (5+5+1)) | (r << (5+1)) | (b << 1);
+			}
+		}
+		/* 背景色 */
+		{
+			int r = 4;
+			int g = 4;
+			int b = 4;
+			for (int iColor = 1; iColor < 16; iColor++) {
+				spPalette[0] = (g << (5+5+1)) | (r << (5+1)) | (b << 1);
+			}
+		}
 	}
 
 	/*
@@ -952,7 +985,7 @@ measurement(
 
 		sprintf(
 			buff,
-			"\n\n\n"
+			"\n\n"
 		);
 		printf(buff); fprintf(fp, buff);
 	}
