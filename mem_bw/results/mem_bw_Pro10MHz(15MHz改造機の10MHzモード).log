@@ -1,5 +1,7 @@
 build settings
 	ENABLE_SRAM_WRITE 0
+	BUILD Feb 13 2023, CRC32 38084D19
+
 
 testCase 0/39
 
