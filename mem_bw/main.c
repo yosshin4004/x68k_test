@@ -90,8 +90,8 @@ static const char *(s_memcpyMethodDescriptions[]) = {
 	"memcpyByU8 (ideal throughput is 454545 bytes/sec @10MHz)\n",
 	"memcpyByMovem (ideal throughput is 2081301 bytes/sec @10MHz)\n",
 	"memcpyByDma Maximum-rate\n",
-	"memcpyByDma Limited-rate BwRatio50%%%% BurstTime16 LiteCsrPolling\n",
-	"memcpyByDma Limited-rate BwRatio50%%%% BurstTime16 FullCsrPolling\n",
+	"memcpyByDma Limited-rate LiteCsrPolling\n",
+	"memcpyByDma Limited-rate FullCsrPolling\n",
 };
 
 /*
@@ -366,6 +366,8 @@ memcpyByDma(
 	const void *src,
 	uint16_t sizeInBytes,
 	DmaOcrReqg ocrReqg,
+	uint8_t dmaGcrBr,
+	uint8_t dmaGcrBt,
 	bool fullCsrPolling		/* CSR を全力でポーリングするか？ */
 ) {
 #if ENABLE_DEBUG_CODE
@@ -477,18 +479,16 @@ memcpyByDma(
 	uint32_t *dar = (uint32_t *)(dmaReg + 0x14);
 	*dar = (uintptr_t)dst;
 
-#if 1
 	/*
 		InsideX68000 p.56
 		GCR : ジェネラルコントロールレジスタ (ch#3 にしか存在しない)
 	*/
 	uint8_t *gcr = (uint8_t *)0xE840FF;
 	{
-		uint8_t bt = 0;		/* 1バーストあたりのDMAクロックサイクル数 0:16clock, 1:32clock, 2:64clock, 3:128clock */
-		uint8_t br = 0;		/* バス占有率 0:50%, 1:25%, 2:12.5%, 3:6.25% */
+		uint8_t bt = dmaGcrBt;		/* 1バーストあたりのDMAクロックサイクル数 0:16clock, 1:32clock, 2:64clock, 3:128clock */
+		uint8_t br = dmaGcrBr;		/* バス占有率 0:50%, 1:25%, 2:12.5%, 3:6.25% */
 		*gcr = ((bt & 3) << 2) | (br & 3);
 	}
-#endif
 
 	/* start */
 	*ccr |= 0x80;
@@ -528,7 +528,9 @@ measurement(
 	DisplaySpBg displaySpBg,
 	TVramMode tvramMode,
 	GVramMode gvramMode,
-	MemcpyMethod memcpyMethod
+	MemcpyMethod memcpyMethod,
+	uint8_t dmaGcrBr,
+	uint8_t dmaGcrBt
 ){
 	char buff[0x1000];
 
@@ -746,13 +748,23 @@ measurement(
 
 		/* 途中画面が真っ黒になる旨の説明 */
 		if (tvramMode == TVramMode_Buffer) {
+			sprintf(
+				buff,
+				"testCase %d/%d の計測が進行中です。しばらくお待ちください。",
+				testCase,
+				numTestCases - 1
+			);
+			int r = 8;
+			int g = 8;
+			int b = 8;
+			uint16_t color = (g << (5+5+1)) | (r << (5+1)) | (b << 1);
 			struct SYMBOLPTR param = {
 				/* WORD		x1 */				0x10,
-				/* WORD		y1 */				0x10,
-				/* UBYTE	*string_address */	"計測進行中です。しばらくお待ちください・・・。",
+				/* WORD		y1 */				0x20,
+				/* UBYTE	*string_address */	buff,
 				/* UBYTE	mag_x */			1,
 				/* UBYTE	mag_y */			1,
-				/* UWORD	color */			0x5555,
+				/* UWORD	color */			color,
 				/* UBYTE	font_type */		1,
 				/* UBYTE	angle */			0
 			};
@@ -946,14 +958,14 @@ measurement(
 					case MemcpyMethod_DmaMaximumRate: {
 						while (rtcPrev == rtcCur) {
 							/* 計測オーバーヘッドを隠すため 8 回実行 */
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_MaimumRate, dmaGcrBr, dmaGcrBt, true);
 							copiedSizeInBytes += MEM_BLOCK_SIZE_IN_BYTES * 8;
 							rtcCur = getRtc();
 						}
@@ -962,14 +974,14 @@ measurement(
 					case MemcpyMethod_DmaLimitedRateLiteCsrPolling: {
 						while (rtcPrev == rtcCur) {
 							/* 計測オーバーヘッドを隠すため 8 回実行 */
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, false);
 							copiedSizeInBytes += MEM_BLOCK_SIZE_IN_BYTES * 8;
 							rtcCur = getRtc();
 						}
@@ -978,14 +990,14 @@ measurement(
 					case MemcpyMethod_DmaLimitedRateFullCsrPolling: {
 						while (rtcPrev == rtcCur) {
 							/* 計測オーバーヘッドを隠すため 8 回実行 */
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
-							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
+							memcpyByDma(dst, src, MEM_BLOCK_SIZE_IN_BYTES, DmaOcrReqg_LimitedRate, dmaGcrBr, dmaGcrBt, true);
 							copiedSizeInBytes += MEM_BLOCK_SIZE_IN_BYTES * 8;
 							rtcCur = getRtc();
 						}
@@ -1079,6 +1091,130 @@ int main(int argc, char *argv[])
 	/* ヒープサイズを拡張 */
 	allmem();
 
+	/* 引数取得結果 */
+	typedef enum {
+		TestMode_Undefined = 0,
+		TestMode_Basic,
+		TestMode_Full,
+		TestMode_Count,
+	} TestMode;
+	struct {
+		TestMode	testMode;
+		int			testCase;
+		uint8_t		dmaGcrBr;
+		uint8_t		dmaGcrBt;
+	} arg = {
+		/* testMode */	TestMode_Undefined,
+		/* testCase */	-1,	/* 全テストケースを実行 */
+		/* dmaGcrBr */	0,	/* Band-width ratio 50% */
+		/* dmaGcrBt */	0	/* Burst time 16 cycles */
+	};
+
+	/* 引数解析 */
+	if (argc == 1) {
+		printf(
+			"Memory bandwidth measurement tool for X680x0.\n"
+			"https://github.com/yosshin4004/x68k_test/tree/main/mem_bw\n"
+			"\n"
+			"usage:\n"
+			"	MEM_BW.X [options]\n"
+			"\n"
+			"option:\n"
+			"	-mode <n>\n"
+			"		Select a test mode.\n"
+			"		1: Basic (40 test cases)\n"
+			"		2: Full (80 test cases)\n"
+			"\n"
+			"	-case <n>\n"
+			"		Execute specified test case.\n"
+			"\n"
+			"	-br <n>\n"
+			"		Specify a limited-rate DMA band-width ratio. (0~3)\n"
+			"		0: 50%%\n"
+			"		1: 25%%\n"
+			"		2: 12.5%%\n"
+			"		3: 6.25%%\n"
+			"\n"
+			"	-bt <n>\n"
+			"		Specify a limited-rate DMA burst time. (0~3)\n"
+			"		0: 16 sycles\n"
+			"		1: 32 sycles\n"
+			"		2: 64 sycles\n"
+			"		3: 128 sycles\n"
+			"\n"
+			"example:\n"
+			"	MEM_BW.X -mode 0 -case 1 -bw 3 -bt 3\n"
+		);
+		return EXIT_SUCCESS;
+	} else {
+		int i = 1;
+		while (i < argc) {
+			if (argv[i][0] == '-') {
+				if (strcmp(argv[i], "-mode") == 0) {
+					i++;
+					if (i >= argc) {
+						printf("ERROR : No arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+					arg.testMode = atoi(argv[i]);
+					if (arg.testMode <= TestMode_Undefined || TestMode_Count <= arg.testMode) {
+						printf("ERROR : Invalid arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+				} else
+				if (strcmp(argv[i], "-case") == 0) {
+					i++;
+					if (i >= argc) {
+						printf("ERROR : No arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+					arg.testCase = atoi(argv[i]);
+					if (arg.testCase < 0) {
+						printf("ERROR : Invalid arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+				} else
+				if (strcmp(argv[i], "-br") == 0) {
+					i++;
+					if (i >= argc) {
+						printf("ERROR : No arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+					arg.dmaGcrBr = atoi(argv[i]);
+					if (arg.dmaGcrBr < 0 || 3 < arg.dmaGcrBr) {
+						printf("ERROR : Invalid arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+				} else
+				if (strcmp(argv[i], "-bt") == 0) {
+					i++;
+					if (i >= argc) {
+						printf("ERROR : No arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+					arg.dmaGcrBt = atoi(argv[i]);
+					if (arg.dmaGcrBt < 0 || 3 < arg.dmaGcrBt) {
+						printf("ERROR : Invalid arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+				} else {
+					printf("ERROR : Invalid arg '%s'\n", argv[i]);
+					return EXIT_FAILURE;
+				}
+			} else {
+				printf("ERROR : Invalid arg '%s'\n", argv[i]);
+				return EXIT_FAILURE;
+			}
+			i++;
+		}
+	}
+
+	/* 引数チェック */
+	if (arg.testMode == TestMode_Undefined) {
+		printf("ERROR : Test mode is not specified.\n");
+		return EXIT_FAILURE;
+	}
+
 	/* 実行ファイルの crc32 を求める */
 	uint32_t crc = 0;
 	{
@@ -1109,19 +1245,38 @@ int main(int argc, char *argv[])
 	/* カーソル消去 */
 	B_CUROFF();			/* X68000 EnvironmentHandBook p.312 */
 
-	/* ビルド設定を記録 */
+	/* ビルド設定と引数を記録 */
 	{
-		char buff[0x1000];
+		char buff1[0x1000];
+		if (arg.testCase != -1) {
+			sprintf(buff1, "%d", arg.testCase);
+		} else {
+			sprintf(buff1, "%s", "(not specified)");
+		}
+		char buff2[0x1000];
+		const char *s_brTbl[] = {"50", "25", "12.5", "6.25"};
+		const int s_btTbl[] = {16, 32, 64, 128};
 		sprintf(
-			buff,
+			buff2,
 			"build settings\n"
 			"	ENABLE_SRAM_WRITE %d\n"
 			"	BUILD " __DATE__ ", CRC32 %08X\n"
+			"	ARG\n"
+			"		-mode %d\n"
+			"		-case %s\n"
+			"		-br %d (Limited-rate DMA band-width ratio %s%%)\n"
+			"		-bt %d (Limited-rate DMA burst time %d cycles)\n"
 			"\n",
 			ENABLE_SRAM_WRITE,
-			crc
+			crc,
+			arg.testMode,
+			buff1,
+			arg.dmaGcrBr,
+			s_brTbl[arg.dmaGcrBr & 3],
+			arg.dmaGcrBt,
+			s_btTbl[arg.dmaGcrBt & 3]
 		);
-		printLogFile(buff);
+		printLogFile(buff2);
 	}
 
 #if ENABLE_SRAM_WRITE
@@ -1135,90 +1290,103 @@ int main(int argc, char *argv[])
 	B_BPOKE((UBYTE *)0xE8E00D, 0x00);
 #endif
 
-	/* テストケースのループ */
-	int testCase = 0;
-#if 0
-/*
-	全組み合わせパターンを計測対象とする。
-	組み合わせ爆発が起きるので利用は推奨しない。
-*/
-	int numTestCases = CrtHf_Count * DisplaySpBg_Count * TVramMode_Count * GVramMode_Count * MemcpyMethod_Count;
-	for (CrtHf crtHf = 0; crtHf < CrtHf_Count; ++crtHf) {
-		for (DisplaySpBg displaySpBg = 0; displaySpBg < DisplaySpBg_Count; ++displaySpBg) {
-			for (TVramMode tvramMode = 0; tvramMode < TVramMode_Count; ++tvramMode) {
-				for (GVramMode gvramMode = 0; gvramMode < GVramMode_Count; ++gvramMode) {
-					for (MemcpyMethod memcpyMethod = 0; memcpyMethod < MemcpyMethod_Count; ++memcpyMethod) {
-						/* 計測 */
-						bool ret = measurement(
-							testCase,
-							numTestCases,
-							crtHf,
-							displaySpBg,
-							tvramMode,
-							gvramMode,
-							memcpyMethod
-						);
-						if (ret == false) {
-							goto aborted;
+	/* テストモード毎のテストセットを実行 */
+	switch (arg.testMode) {
+		case TestMode_Basic: {
+			/*
+				表示 on off 設定を 4 通りに減らすことで、
+				組み合わせ爆発を多少軽減したセット。
+			*/
+			int numTestCases = 4 * CrtHf_Count * MemcpyMethod_Count;
+			int testCase = 0;
+			for (CrtHf crtHf = 0; crtHf < CrtHf_Count; ++crtHf) {
+				for (MemcpyMethod memcpyMethod = 0; memcpyMethod < MemcpyMethod_Count; ++memcpyMethod) {
+					for (int displayMode = 0; displayMode < 4; ++displayMode) {
+						if (arg.testCase == -1 || arg.testCase == testCase) {
+							DisplaySpBg displaySpBg = 0;
+							TVramMode tvramMode = 0;
+							GVramMode gvramMode = 0;
+							switch (displayMode) {
+								case 0: {
+									displaySpBg	= DisplaySpBg_On;
+									tvramMode	= TVramMode_Display;
+									gvramMode	= GVramMode_Display;
+								} break;
+								case 1: {
+									displaySpBg	= DisplaySpBg_Off;
+									tvramMode	= TVramMode_Display;
+									gvramMode	= GVramMode_Display;
+								} break;
+								case 2: {
+									displaySpBg	= DisplaySpBg_On;
+									tvramMode	= TVramMode_Buffer;
+									gvramMode	= GVramMode_Display;
+								} break;
+								case 3: {
+									displaySpBg	= DisplaySpBg_On;
+									tvramMode	= TVramMode_Display;
+									gvramMode	= GVramMode_Buffer;
+								} break;
+							}
+							/* 計測 */
+							bool ret = measurement(
+								testCase,
+								numTestCases,
+								crtHf,
+								displaySpBg,
+								tvramMode,
+								gvramMode,
+								memcpyMethod,
+								arg.dmaGcrBr,
+								arg.dmaGcrBt
+							);
+							if (ret == false) {
+								goto aborted;
+							}
 						}
 						testCase++;
 					}
 				}
 			}
-		}
-	}
-#else
-/*
-	表示 on off 設定を 4 通りに減らすことで、
-	組み合わせ爆発を多少軽減した実装。
-*/
-	int numTestCases = 4 * CrtHf_Count * MemcpyMethod_Count;
-	for (CrtHf crtHf = 0; crtHf < CrtHf_Count; ++crtHf) {
-		for (MemcpyMethod memcpyMethod = 0; memcpyMethod < MemcpyMethod_Count; ++memcpyMethod) {
-			for (int displayMode = 0; displayMode < 4; ++displayMode) {
-				DisplaySpBg displaySpBg = 0;
-				TVramMode tvramMode = 0;
-				GVramMode gvramMode = 0;
-				switch (displayMode) {
-					case 0: {
-						displaySpBg	= DisplaySpBg_On;
-						tvramMode	= TVramMode_Display;
-						gvramMode	= GVramMode_Display;
-					} break;
-					case 1: {
-						displaySpBg	= DisplaySpBg_Off;
-						tvramMode	= TVramMode_Display;
-						gvramMode	= GVramMode_Display;
-					} break;
-					case 2: {
-						displaySpBg	= DisplaySpBg_On;
-						tvramMode	= TVramMode_Buffer;
-						gvramMode	= GVramMode_Display;
-					} break;
-					case 3: {
-						displaySpBg	= DisplaySpBg_On;
-						tvramMode	= TVramMode_Display;
-						gvramMode	= GVramMode_Buffer;
-					} break;
+		} break;
+
+		case TestMode_Full: {
+			/*
+				全組み合わせパターンを計測対象とする。
+				組み合わせ爆発が起きるので利用は推奨しない。
+			*/
+			int numTestCases = CrtHf_Count * DisplaySpBg_Count * TVramMode_Count * GVramMode_Count * MemcpyMethod_Count;
+			int testCase = 0;
+			for (CrtHf crtHf = 0; crtHf < CrtHf_Count; ++crtHf) {
+				for (DisplaySpBg displaySpBg = 0; displaySpBg < DisplaySpBg_Count; ++displaySpBg) {
+					for (TVramMode tvramMode = 0; tvramMode < TVramMode_Count; ++tvramMode) {
+						for (GVramMode gvramMode = 0; gvramMode < GVramMode_Count; ++gvramMode) {
+							for (MemcpyMethod memcpyMethod = 0; memcpyMethod < MemcpyMethod_Count; ++memcpyMethod) {
+								if (arg.testCase == -1 || arg.testCase == testCase) {
+									/* 計測 */
+									bool ret = measurement(
+										testCase,
+										numTestCases,
+										crtHf,
+										displaySpBg,
+										tvramMode,
+										gvramMode,
+										memcpyMethod,
+										arg.dmaGcrBr,
+										arg.dmaGcrBt
+									);
+									if (ret == false) {
+										goto aborted;
+									}
+								}
+								testCase++;
+							}
+						}
+					}
 				}
-				/* 計測 */
-				bool ret = measurement(
-					testCase,
-					numTestCases,
-					crtHf,
-					displaySpBg,
-					tvramMode,
-					gvramMode,
-					memcpyMethod
-				);
-				if (ret == false) {
-					goto aborted;
-				}
-				testCase++;
 			}
-		}
+		} break;
 	}
-#endif
 
 
 aborted:
