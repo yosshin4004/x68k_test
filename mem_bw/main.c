@@ -1143,7 +1143,7 @@ int main(int argc, char *argv[])
 			"		3: 128 sycles\n"
 			"\n"
 			"example:\n"
-			"	MEM_BW.X -mode 0 -case 1 -bw 3 -bt 3\n"
+			"	MEM_BW.X -mode 1 -case 1 -bw 3 -bt 3\n"
 		);
 		return EXIT_SUCCESS;
 	} else {
