@@ -2,12 +2,21 @@
 
 xbeeing さん所有の 24MHz 改造 XVI を 10MHz モードで計測した結果です。
 
+	全体的に Pro 10Mhz より 1% ほどパフォーマンスが高い。
+	SRAM CGROM IPLROM 間の Maximum-rate DMA 転送が PRO に比べると 8～9% 高速。
+	SRAM CGROM IPLROM 間の Limited-rate DMA 転送が PRO に比べると 5% ほど低速。
+
 
 --------------------------------------------------------------------------------------------
 
 build settings
 	ENABLE_SRAM_WRITE 0
-	BUILD Feb 13 2023, CRC32 38084D19
+	BUILD Feb 14 2023, CRC32 DD36157F
+	ARG
+		-mode 1
+		-case (not specified)
+		-br 0 (Limited-rate DMA band-width ratio 50%)
+		-bt 0 (Limited-rate DMA burst time 16 cycles)
 
 
 testCase 0/39
@@ -316,7 +325,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -341,7 +350,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp off (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -366,7 +375,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM buffer
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -391,7 +400,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM buffer
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -416,7 +425,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -441,7 +450,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp off (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -466,7 +475,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM buffer
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -491,7 +500,7 @@ CRTMOD(13) 512x512 65536color 1plane 15kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM buffer
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -816,7 +825,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -841,7 +850,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp off (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -866,7 +875,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM buffer
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -891,7 +900,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM buffer
-memcpyByDma Limited-rate BwRatio50% BurstTime16 LiteCsrPolling
+memcpyByDma Limited-rate LiteCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -916,7 +925,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -941,7 +950,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp off (by $EB0808)
 T-VRAM display
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -966,7 +975,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM buffer
 G-VRAM display
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
@@ -991,7 +1000,7 @@ CRTMOD(12) 512x512 65536color 1plane 31kHz
 SP BG disp on (by $EB0808)
 T-VRAM display
 G-VRAM buffer
-memcpyByDma Limited-rate BwRatio50% BurstTime16 FullCsrPolling
+memcpyByDma Limited-rate FullCsrPolling
 
 throughput (bytes/sec)
 +------------------------+----------+----------+----------+----------+----------+----------+
