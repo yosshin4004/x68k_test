@@ -1103,11 +1103,13 @@ int main(int argc, char *argv[])
 		int			testCase;
 		uint8_t		dmaGcrBr;
 		uint8_t		dmaGcrBt;
+		const char	*outputFilename;
 	} arg = {
-		/* testMode */	TestMode_Undefined,
-		/* testCase */	-1,	/* 全テストケースを実行 */
-		/* dmaGcrBr */	0,	/* Band-width ratio 50% */
-		/* dmaGcrBt */	0	/* Burst time 16 cycles */
+		/* testMode */			TestMode_Undefined,
+		/* testCase */			-1,	/* 全テストケースを実行 */
+		/* dmaGcrBr */			0,	/* Band-width ratio 50% */
+		/* dmaGcrBt */			0,	/* Burst time 16 cycles */
+		/* outputFilename */	"mem_bw.log"
 	};
 
 	/* 引数解析 */
@@ -1142,8 +1144,12 @@ int main(int argc, char *argv[])
 			"		2: 64 sycles\n"
 			"		3: 128 sycles\n"
 			"\n"
+			"	-o <filename>\n"
+			"		Specify a output filename.\n"
+			"		default filename is 'mem_bw.log'\n"
+			"\n"
 			"example:\n"
-			"	MEM_BW.X -mode 1 -case 1 -bw 3 -bt 3\n"
+			"	MEM_BW.X -mode 1 -case 1 -bw 3 -bt 3 -o measurement.log\n"
 		);
 		return EXIT_SUCCESS;
 	} else {
@@ -1197,6 +1203,14 @@ int main(int argc, char *argv[])
 						printf("ERROR : Invalid arg for '%s'.\n", argv[i - 1]);
 						return EXIT_FAILURE;
 					}
+				} else
+				if (strcmp(argv[i], "-o") == 0) {
+					i++;
+					if (i >= argc) {
+						printf("ERROR : No arg for '%s'.\n", argv[i - 1]);
+						return EXIT_FAILURE;
+					}
+					arg.outputFilename = argv[i];
 				} else {
 					printf("ERROR : Invalid arg '%s'\n", argv[i]);
 					return EXIT_FAILURE;
@@ -1211,7 +1225,7 @@ int main(int argc, char *argv[])
 
 	/* 引数チェック */
 	if (arg.testMode == TestMode_Undefined) {
-		printf("ERROR : Test mode is not specified.\n");
+		printf("ERROR : Test mode (-mode option) is not specified.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -1399,7 +1413,7 @@ aborted:
 #endif
 
 	/* ログファイルを書き出す */
-	writeLogFile("mem_bw.log");
+	writeLogFile(arg.outputFilename);
 
 	/* 画面モードを戻す */
 	CRTMOD(0x10);
