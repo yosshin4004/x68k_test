@@ -878,9 +878,6 @@ measurement(
 		printLogFile(buff);
 	}
 
-	/* 現在時刻の初期値 */
-	uint32_t rtcCur = getRtc();
-
 	/* src 側のループ */
 	for (int iSrc = 0; iSrc < COUNT_OF(s_srcMemInfoArray); ++iSrc) {
 		/* 計測値の一時保存バッファ */
@@ -904,6 +901,9 @@ measurement(
 			s_srcMemInfoArray[iSrc].p + MEM_BLOCK_SIZE_IN_BYTES - 1
 		);
 		printLogFile(buff);
+
+		/* 現在時刻の初期値 */
+		uint32_t rtcCur = getRtc();
 
 		/* 秒の頭を検出 */
 		{
